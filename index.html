@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summize — AI Summarizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b12;
+    --surface: #0e1320;
+    --surface2: #141a28;
+    --surface3: #1a2235;
+    --border: rgba(99,143,255,0.12);
+    --border-bright: rgba(99,143,255,0.28);
+    --cyan: #38e8ff;
+    --blue: #638fff;
+    --violet: #a855f7;
+    --green: #22d3a0;
+    --red: #ff4d6a;
+    --text: #e8eef8;
+    --text-muted: #6b7a99;
+    --text-dim: #3d4a66;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,143,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,143,255,0.03) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56,232,255,0.06) 0%, transparent 70%);
+    top: -200px; right: -100px;
+    pointer-events: none; z-index: 0;
+  }
+  .glow-orb-2 {
+    position: fixed;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%);
+    bottom: -100px; left: -100px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,11,18,0.85);
+    backdrop-filter: blur(20px);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    box-shadow: 0 0 22px rgba(56,232,255,0.3);
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 40%, var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .header-center {
+    display: flex; gap: 2px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px;
+  }
+  .mode-pill {
+    padding: 7px 18px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; border: none; background: transparent;
+    color: var(--text-muted); letter-spacing: 0.4px; font-family: 'Space Grotesk', sans-serif;
+  }
+  .mode-pill.active {
+    background: linear-gradient(135deg, rgba(56,232,255,0.15), rgba(99,143,255,0.15));
+    color: var(--cyan); border: 1px solid rgba(56,232,255,0.2);
+  }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .header-btn {
+    display: flex; align-items: center; gap: 7px; padding: 8px 16px;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--surface);
+    font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+  }
+  .header-btn:hover { border-color: var(--border-bright); color: var(--text); background: var(--surface2); }
+  .header-btn svg { width: 14px; height: 14px; }
+
+  /* HERO */
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center; padding: 72px 24px 44px;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(56,232,255,0.06); border: 1px solid rgba(56,232,255,0.18);
+    border-radius: 100px; padding: 6px 16px 6px 10px;
+    font-size: 11px; font-weight: 600; color: var(--cyan);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 28px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-tag .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+    animation: livePulse 1.8s infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--cyan); }
+    50% { opacity: 0.4; box-shadow: 0 0 4px var(--cyan); }
+  }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(42px, 6vw, 78px); font-weight: 800;
+    line-height: 1.0; letter-spacing: -2.5px;
+    color: #fff; max-width: 760px; margin: 0 auto 22px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 50%, var(--violet) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p {
+    font-size: 16px; color: var(--text-muted); max-width: 420px;
+    margin: 0 auto; line-height: 1.7; font-weight: 400;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* MAIN */
+  .main-container {
+    position: relative; z-index: 1;
+    max-width: 920px; margin: 0 auto; padding: 0 24px 100px;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(56,232,255,0.04), 0 8px 60px rgba(0,0,0,0.5), 0 2px 0 rgba(56,232,255,0.06) inset;
+  }
+
+  /* TOOLBAR */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .toolbar-left { display: flex; gap: 8px; align-items: center; }
+  .toolbar-btn {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    border: 1px solid var(--border); border-radius: 8px; background: transparent;
+    font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s; font-family: 'Space Grotesk', sans-serif;
+  }
+  .toolbar-btn:hover { border-color: rgba(56,232,255,0.3); color: var(--cyan); background: rgba(56,232,255,0.05); }
+  .toolbar-btn svg { width: 13px; height: 13px; }
+  .char-count { font-size: 12px; color: var(--text-dim); font-variant-numeric: tabular-nums; letter-spacing: 0.3px; }
+
+  /* SETTINGS */
+  .settings-row {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    background: rgba(20,26,40,0.6); overflow-x: auto;
+  }
+  .setting-group {
+    display: flex; align-items: center; padding: 10px 18px;
+    border-right: 1px solid var(--border);
+  }
+  .setting-group:last-child { border-right: none; }
+  .setting-label {
+    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    white-space: nowrap; letter-spacing: 1.5px; text-transform: uppercase; margin-right: 10px;
+  }
+  .setting-select {
+    appearance: none;
+    background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E") no-repeat right 8px center;
+    border: none; padding: 4px 22px 4px 0;
+    font-size: 12px; font-family: 'Space Grotesk', sans-serif;
+    color: var(--text); cursor: pointer; font-weight: 600;
+  }
+  .setting-select:focus { outline: none; }
+  .setting-select option { background: #1a2235; color: var(--text); }
+
+  /* INPUT */
+  .input-area textarea {
+    width: 100%; min-height: 200px; padding: 24px;
+    border: none; outline: none;
+    font-family: 'Space Grotesk', sans-serif; font-size: 15px; line-height: 1.75;
+    color: var(--text); background: var(--surface); resize: vertical; font-weight: 400;
+  }
+  .input-area textarea::placeholder { color: var(--text-dim); }
+
+  /* URL */
+  .url-input-row {
+    display: flex; gap: 8px; padding: 12px 18px;
+    border-top: 1px solid var(--border); background: var(--surface2);
+  }
+  .url-input {
+    flex: 1; padding: 9px 14px; border: 1px solid var(--border); border-radius: 9px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+    background: var(--surface3); color: var(--text); transition: border-color 0.15s;
+  }
+  .url-input:focus { outline: none; border-color: rgba(56,232,255,0.3); }
+  .url-input::placeholder { color: var(--text-dim); }
+  .url-btn {
+    padding: 9px 16px; border: 1px solid var(--border); border-radius: 9px;
+    background: var(--surface3); font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .url-btn:hover { border-color: rgba(56,232,255,0.3); color: var(--cyan); }
+
+  /* ACTION BAR */
+  .action-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-top: 1px solid var(--border); background: var(--surface2);
+  }
+  .btn-ghost {
+    padding: 9px 16px; border: 1px solid var(--border); border-radius: 9px; background: transparent;
+    font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-ghost:hover { border-color: var(--border-bright); color: var(--text); }
+  .btn-primary {
+    position: relative; padding: 12px 30px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+    color: #080b12; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.3px; box-shadow: 0 0 24px rgba(56,232,255,0.25), 0 4px 16px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  .btn-primary::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); pointer-events: none; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(56,232,255,0.4), 0 8px 24px rgba(0,0,0,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-primary .spinner {
+    display: none; width: 16px; height: 16px;
+    border: 2px solid rgba(8,11,18,0.3); border-top-color: #080b12;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  .btn-primary.loading .spinner { display: block; }
+  .btn-primary.loading .btn-text { opacity: 0.7; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERROR */
+  .error-banner {
+    display: none; padding: 14px 20px;
+    background: rgba(255,77,106,0.08); border-top: 1px solid rgba(255,77,106,0.3);
+    color: var(--red); font-size: 13px; font-weight: 500; align-items: center; gap: 8px;
+  }
+  .error-banner.visible { display: flex; }
+
+  /* RESULT */
+  .result-section {
+    border-top: 1px solid rgba(56,232,255,0.2); display: none;
+    animation: fadeUp 0.4s ease;
+    background: linear-gradient(180deg, rgba(56,232,255,0.02) 0%, transparent 60%);
+  }
+  .result-section.visible { display: block; }
+  .result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .result-title { display: flex; align-items: center; gap: 10px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #fff; }
+  .result-badge {
+    padding: 3px 10px; border-radius: 100px;
+    background: rgba(56,232,255,0.1); border: 1px solid rgba(56,232,255,0.2);
+    font-size: 10px; font-weight: 700; color: var(--cyan); letter-spacing: 1.2px;
+    text-transform: uppercase; font-family: 'Space Grotesk', sans-serif;
+  }
+  .result-actions { display: flex; gap: 8px; }
+  .result-action-btn {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface2); font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .result-action-btn:hover { color: var(--cyan); border-color: rgba(56,232,255,0.3); }
+  .result-action-btn.copied { color: var(--green); border-color: rgba(34,211,160,0.3); }
+  .result-body { padding: 28px 24px 20px; }
+  .result-text { font-size: 15px; line-height: 1.85; color: var(--text); white-space: pre-wrap; font-weight: 400; }
+
+  /* KEY POINTS */
+  .key-points { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .key-points-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
+  .key-point {
+    display: flex; gap: 12px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; color: var(--text);
+    padding: 10px 14px; background: rgba(56,232,255,0.04); border: 1px solid rgba(56,232,255,0.08);
+    border-radius: 10px; align-items: flex-start;
+  }
+  .key-point::before { content: '›'; color: var(--cyan); font-weight: 700; font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+
+  /* STATS */
+  .stats-row { display: flex; border-top: 1px solid var(--border); background: var(--surface2); }
+  .stat { flex: 1; text-align: center; padding: 16px 12px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-val {
+    font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600; }
+
+  /* HISTORY */
+  .history-section {
+    max-width: 920px; margin: 0 auto 80px; padding: 0 24px;
+    position: relative; z-index: 1; display: none; animation: fadeUp 0.4s ease;
+  }
+  .history-section.visible { display: block; }
+  .history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; margin-top: 4px; }
+  .history-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #fff; }
+  .history-clear { font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 5px 10px; border-radius: 7px; transition: all 0.15s; border: none; background: none; font-family: 'Space Grotesk', sans-serif; }
+  .history-clear:hover { color: var(--red); background: rgba(255,77,106,0.08); }
+  .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+  .history-card:hover { border-color: rgba(56,232,255,0.25); box-shadow: 0 4px 24px rgba(56,232,255,0.08); transform: translateY(-2px); }
+  .history-card-date { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+  .history-card-preview { font-size: 13px; line-height: 1.55; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .history-card-badge { display: inline-block; margin-top: 10px; padding: 2px 9px; border-radius: 100px; background: rgba(99,143,255,0.1); border: 1px solid rgba(99,143,255,0.15); font-size: 11px; color: var(--blue); font-weight: 600; letter-spacing: 0.5px; text-transform: capitalize; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 18px; }
+    .header-center { display: none; }
+    .hero { padding: 48px 18px 32px; }
+    .main-container { padding: 0 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb-2"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <span class="logo-text">Summize</span>
+  </div>
+  <div class="header-center">
+    <button class="mode-pill active" data-mode="text">Text</button>
+    <button class="mode-pill" data-mode="url">URL</button>
+    <button class="mode-pill" data-mode="file">File</button>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" id="historyToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      History
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-tag">
+    <span class="live-dot"></span>
+    Neural Summarization Active
+  </div>
+  <h1>Turn <span class="grad">noise</span> into<br>signal, instantly</h1>
+  <p>Drop any text, article, or document. Get a laser-sharp summary in seconds.</p>
+</section>
+
+<div class="main-container">
+  <div class="card">
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="toolbar-btn" onclick="pasteFromClipboard()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Paste
+        </button>
+        <button class="toolbar-btn" onclick="loadSample()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Sample
+        </button>
+        <button class="toolbar-btn" onclick="clearAll()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Clear
+        </button>
+      </div>
+      <span class="char-count" id="charCount">0 chars · 0 words</span>
+    </div>
+
+    <div class="settings-row">
+      <div class="setting-group">
+        <span class="setting-label">Length</span>
+        <select class="setting-select" id="lengthSelect">
+          <option value="brief">Brief</option>
+          <option value="short" selected>Short</option>
+          <option value="medium">Medium</option>
+          <option value="detailed">Detailed</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <span class="setting-label">Tone</span>
+        <select class="setting-select" id="toneSelect">
+          <option value="neutral" selected>Neutral</option>
+          <option value="academic">Academic</option>
+          <option value="casual">Casual</option>
+          <option value="business">Business</option>
+          <option value="creative">Creative</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <span class="setting-label">Focus</span>
+        <select class="setting-select" id="focusSelect">
+          <option value="general" selected>General</option>
+          <option value="key-findings">Key Findings</option>
+          <option value="action-items">Action Items</option>
+          <option value="facts">Facts & Data</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <span class="setting-label">Key Points</span>
+        <select class="setting-select" id="keyPointsSelect">
+          <option value="none">None</option>
+          <option value="3" selected>3 Points</option>
+          <option value="5">5 Points</option>
+          <option value="7">7 Points</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="input-area" id="textInputArea">
+      <textarea id="inputText" placeholder="Paste your article, document, essay, or any block of text here…" oninput="updateCharCount()"></textarea>
+    </div>
+
+    <div class="url-input-row" id="urlInputRow" style="display:none;">
+      <input type="url" class="url-input" id="urlInput" placeholder="https://example.com/article...">
+      <button class="url-btn" onclick="fetchUrl()">Fetch Content</button>
+    </div>
+
+    <div class="action-bar">
+      <label class="btn-ghost" style="cursor:pointer;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+        Upload File
+        <input type="file" accept=".txt,.md" style="display:none;" onchange="handleFileUpload(event)">
+      </label>
+      <button class="btn-primary" id="summarizeBtn" onclick="summarize()">
+        <div class="spinner"></div>
+        <span class="btn-text">Summarize</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="error-banner" id="errorBanner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="errorText">Something went wrong. Please try again.</span>
+    </div>
+
+    <div class="result-section" id="resultSection">
+      <div class="result-header">
+        <div class="result-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--cyan)"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Summary Output
+          <span class="result-badge" id="resultBadge">Short</span>
+        </div>
+        <div class="result-actions">
+          <button class="result-action-btn" id="copyBtn" onclick="copyResult()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+          <button class="result-action-btn" onclick="downloadResult()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download
+          </button>
+          <button class="result-action-btn" onclick="summarize()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+            Redo
+          </button>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="result-text" id="resultText"></div>
+        <div class="key-points" id="keyPointsSection" style="display:none;">
+          <div class="key-points-title">Key Points</div>
+          <div id="keyPointsList"></div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val" id="statOriginal">—</div><div class="stat-label">Original Words</div></div>
+        <div class="stat"><div class="stat-val" id="statSummary">—</div><div class="stat-label">Summary Words</div></div>
+        <div class="stat"><div class="stat-val" id="statReduction">—</div><div class="stat-label">Reduction</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="history-section" id="historySection">
+  <div class="history-header">
+    <div class="history-title">Recent Summaries</div>
+    <button class="history-clear" onclick="clearHistory()">Clear all</button>
+  </div>
+  <div class="history-grid" id="historyGrid"></div>
+</div>
+
+<script>
+  let currentMode = 'text';
+  let history = JSON.parse(localStorage.getItem('summize_history') || '[]');
+  let lastResult = '';
+
+  document.querySelectorAll('.mode-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentMode = pill.dataset.mode;
+      document.getElementById('urlInputRow').style.display = currentMode === 'url' ? 'flex' : 'none';
+    });
+  });
+
+  document.getElementById('historyToggle').addEventListener('click', () => {
+    const s = document.getElementById('historySection');
+    s.classList.toggle('visible');
+    if (s.classList.contains('visible')) renderHistory();
+  });
+
+  function updateCharCount() {
+    const text = document.getElementById('inputText').value;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    document.getElementById('charCount').textContent = `${text.length.toLocaleString()} chars · ${words.toLocaleString()} words`;
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      document.getElementById('inputText').value = text;
+      updateCharCount();
+    } catch(e) { alert('Clipboard access denied. Please paste manually.'); }
+  }
+
+  function loadSample() {
+    document.getElementById('inputText').value = `Artificial intelligence is transforming industries at an unprecedented pace. From healthcare diagnostics to financial modeling, AI systems are demonstrating capabilities once thought exclusive to human intelligence. Machine learning algorithms now power everything from recommendation engines to autonomous vehicles.\n\nThe economic impact is substantial. McKinsey estimates AI could contribute $13 trillion to global economic output by 2030. However, this raises significant concerns about job displacement, algorithmic bias, and the concentration of power in a few large corporations.\n\nResearchers at Stanford and MIT have published findings suggesting that while AI will automate many routine tasks, it will simultaneously create new categories of jobs requiring human-AI collaboration. The key challenge facing policymakers is ensuring equitable access to AI tools and retraining programs for displaced workers.\n\nEthical frameworks for AI governance are still nascent. The EU's AI Act represents the first major regulatory effort globally, establishing risk-based categories for AI applications. Critics argue the legislation may stifle innovation, while proponents contend it is essential to prevent misuse.`;
+    updateCharCount();
+  }
+
+  function clearAll() {
+    document.getElementById('inputText').value = '';
+    updateCharCount();
+    document.getElementById('resultSection').classList.remove('visible');
+    document.getElementById('errorBanner').classList.remove('visible');
+  }
+
+  function fetchUrl() {
+    const url = document.getElementById('urlInput').value;
+    if (!url) return;
+    document.getElementById('inputText').value = `Please summarize the content at this URL: ${url}`;
+    updateCharCount();
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { document.getElementById('inputText').value = e.target.result; updateCharCount(); };
+    reader.readAsText(file);
+  }
+
+  async function summarize() {
+    const text = document.getElementById('inputText').value.trim();
+    if (!text) { showError('Please enter some text to summarize.'); return; }
+    const btn = document.getElementById('summarizeBtn');
+    btn.classList.add('loading'); btn.disabled = true;
+    hideError();
+    document.getElementById('resultSection').classList.remove('visible');
+
+    const length = document.getElementById('lengthSelect').value;
+    const tone = document.getElementById('toneSelect').value;
+    const focus = document.getElementById('focusSelect').value;
+    const keyPoints = document.getElementById('keyPointsSelect').value;
+
+    const lengthMap = { brief: '1-2 sentences', short: 'one paragraph', medium: '2-3 paragraphs', detailed: 'a detailed multi-paragraph breakdown' };
+    const focusMap = { general: '', 'key-findings': 'Focus on key findings and conclusions.', 'action-items': 'Focus on action items and recommendations.', facts: 'Focus on specific facts, statistics, and data points.' };
+    const kpInstruction = keyPoints !== 'none' ? `\n\nAfter the summary, add exactly ${keyPoints} key takeaways as JSON at the end: {"keyPoints": ["...", ...]}` : '';
+
+    const prompt = `Summarize the following text in ${lengthMap[length]}. Use a ${tone} tone. ${focusMap[focus]}\n\n${text}${kpInstruction}`;
+
+    try {
+      const res = await fetch("http://localhost:3000/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'API error');
+
+      const fullText = data.content.map(c => c.text || '').join('');
+      let summaryText = fullText, parsedPoints = [];
+
+      if (keyPoints !== 'none') {
+        const m = fullText.match(/\{"keyPoints":\s*\[[\s\S]*?\]\}/);
+        if (m) {
+          try { const p = JSON.parse(m[0]); parsedPoints = p.keyPoints || []; summaryText = fullText.replace(m[0], '').trim(); } catch(e) {}
+        }
+      }
+
+      lastResult = summaryText;
+      document.getElementById('resultText').textContent = summaryText;
+      document.getElementById('resultBadge').textContent = length.charAt(0).toUpperCase() + length.slice(1);
+
+      if (parsedPoints.length > 0) {
+        document.getElementById('keyPointsList').innerHTML = parsedPoints.map(p => `<div class="key-point">${p}</div>`).join('');
+        document.getElementById('keyPointsSection').style.display = 'block';
+      } else {
+        document.getElementById('keyPointsSection').style.display = 'none';
+      }
+
+      const orig = text.trim().split(/\s+/).length;
+      const summ = summaryText.trim().split(/\s+/).length;
+      const red = Math.round((1 - summ / orig) * 100);
+      document.getElementById('statOriginal').textContent = orig.toLocaleString();
+      document.getElementById('statSummary').textContent = summ.toLocaleString();
+      document.getElementById('statReduction').textContent = `${Math.max(0, red)}%`;
+      document.getElementById('resultSection').classList.add('visible');
+      addToHistory(text.slice(0, 200), summaryText, length);
+    } catch(err) {
+      showError(err.message || 'Something went wrong. Please try again.');
+    }
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+
+  function showError(msg) { document.getElementById('errorText').textContent = msg; document.getElementById('errorBanner').classList.add('visible'); }
+  function hideError() { document.getElementById('errorBanner').classList.remove('visible'); }
+
+  function copyResult() {
+    navigator.clipboard.writeText(lastResult).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Copied!`;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+      }, 2000);
+    });
+  }
+
+  function downloadResult() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([lastResult], { type: 'text/plain' }));
+    a.download = 'summary.txt'; a.click();
+  }
+
+  function addToHistory(preview, summary, length) {
+    history.unshift({ preview, summary, length, date: new Date().toISOString() });
+    history = history.slice(0, 12);
+    localStorage.setItem('summize_history', JSON.stringify(history));
+  }
+
+  function renderHistory() {
+    const grid = document.getElementById('historyGrid');
+    if (!history.length) { grid.innerHTML = '<p style="color:var(--text-dim);font-size:13px;">No summaries yet.</p>'; return; }
+    grid.innerHTML = history.map((h, i) => `
+      <div class="history-card" onclick="loadHistory(${i})">
+        <div class="history-card-date">${new Date(h.date).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="history-card-preview">${h.summary.slice(0,160)}…</div>
+        <span class="history-card-badge">${h.length}</span>
+      </div>`).join('');
+  }
+
+  function loadHistory(i) {
+    const h = history[i];
+    lastResult = h.summary;
+    document.getElementById('resultText').textContent = h.summary;
+    document.getElementById('resultBadge').textContent = h.length;
+    document.getElementById('keyPointsSection').style.display = 'none';
+    document.getElementById('statOriginal').textContent = '—';
+    document.getElementById('statSummary').textContent = h.summary.trim().split(/\s+/).length;
+    document.getElementById('statReduction').textContent = '—';
+    document.getElementById('resultSection').classList.add('visible');
+    document.getElementById('historySection').classList.remove('visible');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function clearHistory() {
+    history = []; localStorage.removeItem('summize_history'); renderHistory();
+  }
+</script>
+</body>
+</html>
