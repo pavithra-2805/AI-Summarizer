@@ -336,9 +336,9 @@ This project is released under the **MIT License**.
 
 # 👨‍💻 Author
 
-**T. Narasimha**
+**Lakshmi Pavithra Korukonda**
 
-GitHub: https://github.com/Narasimha2308
+GitHub: https://github.com/pavithra-2805
 
 ---
 
